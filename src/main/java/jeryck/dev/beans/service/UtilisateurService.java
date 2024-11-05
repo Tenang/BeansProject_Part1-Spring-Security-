@@ -6,6 +6,10 @@ import jeryck.dev.beans.entite.Utilisateur;
 import jeryck.dev.beans.entite.Validation;
 import jeryck.dev.beans.repository.UtilisateurRepository;
 import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -14,8 +18,10 @@ import java.util.Map;
 import java.util.Optional;
 
 @AllArgsConstructor
+//@NoArgsConstructor
 @Service
-public class UtilisateurService {
+public class UtilisateurService implements UserDetailsService {
+
 
     private UtilisateurRepository utilisateurRepository;
     private BCryptPasswordEncoder passwordEncoder;
@@ -56,5 +62,13 @@ public class UtilisateurService {
         Utilisateur utilisateurActiver = this.utilisateurRepository.findById(validation.getUtilisateur().getId()).orElseThrow(()->  new RuntimeException("utilisateur inconnu "));
                 utilisateurActiver.setActif(true);
                 this.utilisateurRepository.save(utilisateurActiver);
+    }
+
+    @Override
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+
+        return  this.utilisateurRepository
+                .findByEmail(username).orElseThrow(() -> new UsernameNotFoundException("Aucun utilisateur ne correspond  a cette identifiant"));
+
     }
 }
