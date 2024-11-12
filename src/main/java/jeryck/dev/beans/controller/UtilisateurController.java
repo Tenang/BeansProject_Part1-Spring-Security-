@@ -2,6 +2,7 @@ package jeryck.dev.beans.controller;
 
 import jeryck.dev.beans.dto.AuthentificationDTO;
 import jeryck.dev.beans.entite.Utilisateur;
+import jeryck.dev.beans.securite.JwtService;
 import jeryck.dev.beans.service.UtilisateurService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +24,7 @@ import java.util.Map;
 @RequestMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
 public class UtilisateurController {
 
+    private JwtService jwtService;
     private AuthenticationManager authenticationManager;
     private UtilisateurService utilisateurService;
 
@@ -44,8 +46,11 @@ public class UtilisateurController {
      final Authentication authenticate= authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(authentificationDTO.username(),
                         authentificationDTO.password()));
-        log.info("resultat{} ", authenticate.isAuthenticated());
-        return null;
+
+     if (authenticate.isAuthenticated()){
+         return this.jwtService.generate(authentificationDTO.username());
+     }
+     return null;
 
     }
 }

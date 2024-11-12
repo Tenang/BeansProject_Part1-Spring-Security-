@@ -1,6 +1,8 @@
 package jeryck.dev.beans.securite;
 
 import jeryck.dev.beans.service.UtilisateurService;
+import lombok.AllArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -11,15 +13,25 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
 
 @Configuration
 @EnableWebSecurity
 public class ConfigurationSecuriteApplication {
 
- /*    private final UserDetailsService userDetailsService;
+
+   private final JwtFilter jwtFilter;
+
+    public ConfigurationSecuriteApplication(JwtFilter jwtFilter) {
+        this.jwtFilter = jwtFilter;
+    }
+
+   /*    private final UserDetailsService userDetailsService;
 
    public ConfigurationSecuriteApplication(UserDetailsService userDetailsService) {
         this.userDetailsService = userDetailsService;
@@ -38,7 +50,12 @@ public class ConfigurationSecuriteApplication {
                                         .requestMatchers(HttpMethod.POST,"/activation").permitAll()
                                         .requestMatchers(HttpMethod.POST,"/connexion").permitAll()
                                         .anyRequest().authenticated()
-                ).build();
+                )
+                .sessionManagement(httpSecuritySessionManagementConfigurer
+                        -> httpSecuritySessionManagementConfigurer.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
+                .addFilterBefore(jwtFilter,UsernamePasswordAuthenticationFilter.class)
+                .build();
     }
 
     //ON cree un bean pour encoder le mot de passe
