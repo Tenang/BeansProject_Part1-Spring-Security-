@@ -1,8 +1,5 @@
 package jeryck.dev.beans.securite;
 
-import jeryck.dev.beans.service.UtilisateurService;
-import lombok.AllArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -25,9 +22,11 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class ConfigurationSecuriteApplication {
 
 
+    private final BCryptPasswordEncoder bCryptPasswordEncoder;
    private final JwtFilter jwtFilter;
 
-    public ConfigurationSecuriteApplication(JwtFilter jwtFilter) {
+    public ConfigurationSecuriteApplication(BCryptPasswordEncoder bCryptPasswordEncoder, JwtFilter jwtFilter) {
+        this.bCryptPasswordEncoder = bCryptPasswordEncoder;
         this.jwtFilter = jwtFilter;
     }
 
@@ -58,12 +57,6 @@ public class ConfigurationSecuriteApplication {
                 .build();
     }
 
-    //ON cree un bean pour encoder le mot de passe
-    @Bean
-    public BCryptPasswordEncoder passwordEncoder(){
-        return new BCryptPasswordEncoder();
-    }
-
 
     //partie pour l'authentification
     @Bean
@@ -78,7 +71,7 @@ public class ConfigurationSecuriteApplication {
         DaoAuthenticationProvider  daoAuthenticationProvider = new DaoAuthenticationProvider();
 
         daoAuthenticationProvider.setUserDetailsService(userDetailsService);
-        daoAuthenticationProvider.setPasswordEncoder(this.passwordEncoder());
+        daoAuthenticationProvider.setPasswordEncoder(bCryptPasswordEncoder);
         return daoAuthenticationProvider;
     }
 

@@ -1,8 +1,10 @@
 package jeryck.dev.beans.service;
 
 import jeryck.dev.beans.entite.Avis;
+import jeryck.dev.beans.entite.Utilisateur;
 import jeryck.dev.beans.repository.AvisRepository;
 import lombok.AllArgsConstructor;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 @AllArgsConstructor
@@ -13,6 +15,9 @@ public class AvisService {
     private final AvisRepository avisRepository;
 
     public void creer(Avis avis){
+
+    Utilisateur utilisateur = (Utilisateur) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+    avis.setUtilisateur(utilisateur);
         this.avisRepository.save(avis);
     }
 }
