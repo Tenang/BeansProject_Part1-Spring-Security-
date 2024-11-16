@@ -6,26 +6,69 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import jakarta.transaction.Transactional;
+import jeryck.dev.beans.entite.Jwt;
 import jeryck.dev.beans.entite.Utilisateur;
+import jeryck.dev.beans.repository.JwtRepository;
 import jeryck.dev.beans.service.UtilisateurService;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.security.Key;
+import java.time.Instant;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
+@Transactional
 @AllArgsConstructor
 @Service
+@Slf4j
 public class JwtService {
 
+    public static final String BEARER = "bearer";
     private final String ENCRYPTION_KEY = "902a055292f10b2cd13f9504dc1b849fbfff778ac57db4cff08cfaba34c42290";
     private UtilisateurService utilisateurService;
+    private JwtRepository jwtRepository;
+
+    public Jwt tokenByValue(String value) {
+    return this.jwtRepository.findByValueAndDesactivateAndExpire(
+            value,
+                    false,
+                    false)
+            .orElseThrow(() -> new RuntimeException("token invalide ou inconnu "));
+    }
     public Map<String, String> generate(String username){
 
         Utilisateur utilisateur = (Utilisateur)this.utilisateurService.loadUserByUsername(username);
-        return  this.generateJwt(utilisateur);
+
+        final Map <String, String> jwtMap = this.generateJwt(utilisateur);
+
+       final Jwt jwt = Jwt
+                .builder()
+                .value(jwtMap.get(BEARER))
+                .desactivate(false)
+                .expire(false)
+                .utilisateur(utilisateur)
+                .build();
+       this.jwtRepository.save(jwt);
+        return jwtMap;
+    }
+    private void disableTokens(Utilisateur utilisateur){
+        final List<Jwt> jwtList = this.jwtRepository.findByUtilisateur(utilisateur.getEmail()).peek(
+                jwt -> {
+                    jwt.setDesactivate(true);
+                    jwt.setExpire(true);
+                }
+        ).collect(Collectors.toList());
+        this.jwtRepository.saveAll(jwtList);
     }
     public String extractUsername(String token) {
 
@@ -76,4 +119,24 @@ public class JwtService {
     }
 
 
+    public void deconnexion() {
+        Utilisateur utlisateur = (Utilisateur) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Jwt jwt = this.jwtRepository.findByUtilisateurValidToken(
+                utlisateur.getEmail(),
+                false,
+                false).orElseThrow(()-> new RuntimeException("Token invalide"));
+
+        jwt.setDesactivate(true);
+        jwt.setExpire(true);
+        this.jwtRepository.save(jwt);
+    }
+
+   // @Scheduled( cron = "5 4 * * *")
+    @Scheduled( cron = "0 */1 * * * *")
+    public void removeUselessJwt(){
+        log.info("Supression des tokens a {}", Instant.now());
+        this.jwtRepository.deleteAllByExpireAndDesactivate(true,true);
+
+
+    }
 }
